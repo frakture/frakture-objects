@@ -1,0 +1,17 @@
+{
+  "author": "Frakture,Inc",
+  "name": "frakture-objects",
+  "description": "Frakture Object API for Express",
+  "keywords":[],
+  "version": "0.1.0",
+  "homepage":"https://github.com/frakture/frakture-objects",
+  "repository" :
+             { "type" : "git"
+             , "url" : "https://github.com/frakture/frakture-objects.git"
+             },
+  "main": "./main",
+  "dependencies": {
+  },
+  "devDependencies":{
+  }
+}
