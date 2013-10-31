@@ -3,7 +3,7 @@
   "name": "frakture-objects",
   "description": "Frakture Object API for Express",
   "keywords":[],
-  "version": "0.1.0",
+  "version": "0.1.1",
   "homepage":"https://github.com/frakture/frakture-objects",
   "repository" :
              { "type" : "git"
