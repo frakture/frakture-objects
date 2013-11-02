@@ -11,6 +11,7 @@
              },
   "main": "./main",
   "dependencies": {
+	  "frakture-utility": "latest"
   },
   "devDependencies":{
   }
