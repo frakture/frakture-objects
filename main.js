@@ -1,6 +1,7 @@
 //Handles some things some as re and de-dollar signing queries
-var utilities=require("frakture-utility");
-var db = utilities.mongo.getDB();
+var utilities=require("frakture-utility"),
+	express=require("express"),
+	db = utilities.mongo.getDB();
 
 function listObject(req, res, next){
 		var obj=req.params.object;
@@ -22,7 +23,7 @@ function listObject(req, res, next){
 		var fields=req.param("fields");
 		if (fields) fields=JSON.parse(fields);
 		if (!fields) fields={};
-	
+		
 		db.collection(obj).find(q,fields).toArray(function(err, result) {
 			if (err){ next(err);return;}
 			if (req.param('functions')){
@@ -47,8 +48,6 @@ function getObject(req, res,next){
 		db.collection(obj).findOne(q,function(err, result) {
 			if (err){ next(err);return;}
 			if (req.param('functions')){
-				console.log("Sending functions");
-				console.log(result);
 				res.set('Content-Type', 'application/javascript');
 
 				return res.send(utilities.js.serialize(result));
@@ -207,38 +206,44 @@ function deleteObjects(req,res,next){
 	});
 }
 
-exports.api=function(){
+exports.express=function(){
 	return function(req,res,next){
-	
-		var parts=req.url.split("/");
+		
+		var parts=req.url.split("?")[0].split("/");
+		if (parts[1]=="js") return express.static(__dirname)(req,res,next);
 		req.params={};
 		req.params.object=parts[1];
-		console.log(req.url);
-		listObject(req,res,next);
-
-	return;
 	
-	//RESTFUL OBJECT API
-	//LIST
-	app.get('/:object',listObject);
+		switch(req.method){
+			case "GET":
+				if (parts.length==2) return listObject(req,res,next);
+				if (parts[2]){
+					if (parts[2]=='_save'){
+						//Because of the cross-domain restrictions that are not QUITE overcome by CORS in mobile browsers, 
+						// we do allow a '_save' GET request, (instead of a POST)
+						return save(req,res,next);
+					}else{
+						req.params.id=parts[2];
+						return getObject(req,res,next);
+					}
+				};
+				break;
+			case "POST":
+				return save(req,res,next);
+				break;
+			
+			case "PUT":  //   /:object/:id
+				if (parts[2]){req.params.id=parts[2];}
+				return update(req,res,next);
+		
 
-	//READ
-	app.get('/:object/:id',getObject);
-
-	app.post('/:object',  save);
-
-	//Because of the cross-domain restrictions that are not QUITE overcome by CORS in mobile browsers, we do allow an '_save' GET request
-	app.get('/:object/_save', save);
-
-	//For update by id
-	app.put('/:object/:id',  update);
-
-	//For multiple update
-	app.put('/:object',  update);
-
-	//DELETE
-	app.delete('/:object/:id',  deleteObjects);
-	app.delete('/:object',  deleteObjects);
+			//DELETE
+			case "DELETE":
+				if (parts[2]){req.params.id=parts[2];}
+				return deleteObjects(req,res,next);
+				break;
+			}
+			next();
 	}
 }
 

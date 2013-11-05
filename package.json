@@ -11,7 +11,12 @@
              },
   "main": "./main",
   "dependencies": {
-	  "frakture-utility": "latest"
+	  "frakture-utility": "latest",
+	  "express": ">=3.4.4",
+	  "passport":"latest",
+	  "passport-http-bearer":">=0.2.1",
+      "passport-oauth":">=0.1.15",
+      "passport-google-oauth":">=0.1.5"
   },
   "devDependencies":{
   }
