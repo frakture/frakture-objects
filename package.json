@@ -11,8 +11,9 @@
   },
   "main": "./main",
   "dependencies": {
+	"async":">=0.2.9",
+	"express": ">=3.4.4",
     "frakture-utility": "latest",
-    "express": ">=3.4.4",
     "passport": "latest",
     "passport-http-bearer": ">=0.2.1",
     "passport-oauth": ">=0.1.15",

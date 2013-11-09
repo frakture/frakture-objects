@@ -1,7 +1,8 @@
 //Handles some things some as re and de-dollar signing queries
 var utilities=require("frakture-utility"),
 	express=require("express"),
-	db = utilities.mongo.getDB();
+	db = utilities.mongo.getDB(),
+	async=require("async");
 
 function listObject(req, res, next){
 		var obj=req.params.object;
