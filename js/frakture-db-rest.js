@@ -13,7 +13,6 @@ Frakture.DB.path=null;
 	var scripts = document.getElementsByTagName("script");
 	var src = scripts[scripts.length-1].src;
 	Frakture.DB.path=$("<a/>").attr("href",src)[0].pathname.split("/").slice(0,-2).join("/");
-	console.log(Frakture.DB.path);
 })();
 
 //Extend Frakture.DB to override certain functions for RESTFUL calls
