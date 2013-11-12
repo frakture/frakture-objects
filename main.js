@@ -6,7 +6,8 @@ var utilities=require("frakture-utility"),
 
 function listObject(req, res, next){
 		var obj=req.params.object;
-		var q=JSON.parse(req.param('q','{}'));
+		var q=utilities.js.safeEval(req.param('q','{}'));
+		
 		try{
 			if (q._id){
 				 q._id=db.ObjectID.createFromHexString(q._id);
@@ -80,13 +81,6 @@ function getObject(req, res,next){
 			}
 		}
 
-		//If there's a presave error, don't do any other presave manipulations
-		try{
-			Frakture.Objects.base_object.runPresave(definition,data);
-		}catch(err){
-			if (err.length){errs=errs.concat(err);}
-			else errs.push(err);
-		}
 		if (errs.length>0){
 			callback(errs);
 		}else{
@@ -129,7 +123,7 @@ function getObject(req, res,next){
 					res.setHeader("Error",err.toString());
 					return;
 				}else{
-					res.jsonp(requestData);
+					res.jsonp({success:true});
 				}
 			}
 		);
