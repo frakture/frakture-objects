@@ -97,33 +97,47 @@ function getObject(req, res,next){
 		var requestData=JSON.parse(d);
 	
 		var arrayRequestData=Array.isArray(requestData)?requestData:[requestData];
-	
-		async.each(arrayRequestData,function(data,callback){
+		var results=[];
+		
+		async.eachSeries(arrayRequestData,function(data,dataCallback){
 			_beforeSave(definition,data,function(err,modifiedData){
 				data=modifiedData;
-				if (err){ callback(err); return;}
+				if (err){ dataCallback(err); return;}
 
 				if (data.account_id && (data.account_id !=req.user.current_account_id)){next(new Error("a different account_id was specified than this users current account"));return;}
 	
 				data.account_id=req.user.current_account_id;
 			
 					//Some collections, like 'code', are incremental
-					if (['code'].indexOf(obj)>=0 && !data._id){
-						utilities.mongo.insertIncrementalDocument(data,db.collection('code'),callback);
+					if (['code','message'].indexOf(obj)>=0 && !data._id){
+						utilities.mongo.insertIncrementalDocument(data,db.collection(obj),function(err,d){
+							if (err){
+								results.push(null);
+								 return dataCallback(err);
+							}
+							results.push(d._id);
+							dataCallback();
+						});
 					}else{
-						db.collection(obj).save(data,{safe:true},callback);
+						db.collection(obj).save(data,{safe:true},function(err,d){
+							if (err){
+								results.push(null);
+								 return dataCallback(err);
+							}
+							results.push(d._id);
+							dataCallback();
+						});
 					}
-			
 				}
 			)},
-			function(err,result){
+			function(err){
 				console.log(err);
 				if (err){
 					res.jsonp(500,err);
 					res.setHeader("Error",err.toString());
 					return;
 				}else{
-					res.jsonp({success:true});
+					res.jsonp({success:true,_ids:results});
 				}
 			}
 		);

@@ -193,11 +193,14 @@ Frakture.DB.Collection.prototype.findOne = function(query, callback_or_fields, c
 		}
 		
 		function _callback(err,data){
-			if (err){ console.log(err);
+			if (err){
+				 console.log(err);
 			}else{
+				objNew._id=data._ids[0];
 				$(document).trigger("db."+object+".change",[data]) ;
 			}
-			if (callback) callback(err,data);
+			
+			if (callback) callback(err,objNew);
 		}
 
 		this._save.apply(this,[objNew,opts,_callback]);
