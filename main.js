@@ -33,7 +33,12 @@ function listObject(req, res, next){
 		if (fields) fields=JSON.parse(fields);
 		if (!fields) fields={};
 		
-		db.collection(obj).find(q,fields).toArray(function(err, result) {
+		var handle=db.collection(obj).find(q,fields);
+		if (req.param("sort")){
+			handle.sort(JSON.parse(req.param("sort")));
+		}
+		
+		handle.toArray(function(err, result) {
 			if (err){ console.error(q); next(err);return;}
 			if (req.param('functions')){
 				res.set('Content-Type', 'application/javascript');
