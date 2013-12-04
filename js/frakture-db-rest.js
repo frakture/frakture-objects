@@ -87,7 +87,7 @@ Frakture.DB.Collection.prototype._count = function(query, opts_or_callback,callb
 
     $.ajax({
         url: Frakture.DB.path+"/"+this.name+"/count",
-        type: "post",
+        type: "get",
         data: data,
         dataType: "json",
         async: opts.async !== false,

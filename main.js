@@ -4,15 +4,22 @@ var utilities=require("frakture-utility"),
 	db = utilities.mongo.getDB(),
 	async=require("async");
 
+Frakture={Objects:{}};
+
 function listObject(req, res, next){
 		var obj=req.params.object;
 		var q=utilities.js.safeEval(req.param('q','{}'));
 		
 		try{
-			if (q._id){
+			if (typeof q._id=='string'){
 				 q._id=db.ObjectID.createFromHexString(q._id);
+			}else if (Array.isArray(q._id["$in"])){
+				q._id["$in"]=q._id["$in"].map(function(d){return db.ObjectID.createFromHexString(d)});
+			}else if (Array.isArray(q._id["$nin"])){
+				q._id["$nin"]=q._id["$nin"].map(function(d){return db.ObjectID.createFromHexString(d)});
 			}
 		}catch(e){}
+		
 	
 		if (req.param("useGlobal")=='true'){
 			q.account_id={$exists:false};
@@ -27,7 +34,7 @@ function listObject(req, res, next){
 		if (!fields) fields={};
 		
 		db.collection(obj).find(q,fields).toArray(function(err, result) {
-			if (err){ next(err);return;}
+			if (err){ console.error(q); next(err);return;}
 			if (req.param('functions')){
 				res.set('Content-Type', 'application/javascript');
 
@@ -37,6 +44,37 @@ function listObject(req, res, next){
 			}	
 		});
 	};
+	
+function count(req,res,next){
+		var obj=req.params.object;
+		var q=utilities.js.safeEval(req.param('q','{}'));
+		
+		try{
+			if (typeof q._id=='string'){
+				 q._id=db.ObjectID.createFromHexString(q._id);
+			}
+		}catch(e){}
+	
+		if (req.param("useGlobal")=='true'){
+			q.account_id={$exists:false};
+		}else{
+			q.account_id=req.user.current_account_id;
+		}
+		//Convert any $oid objects into actual BSON ids
+		q=utilities.mongo.convertOid(q);
+		
+		
+		if (req.param("useGlobal")=='true'){
+			q.account_id={$exists:false};
+		}else{
+			q.account_id=req.user.current_account_id;
+		}
+		db.collection(obj).count(q,function(err, result) {
+			if (err){ next(err);return;}
+			res.jsonp(result);
+		});
+}
+
 function getObject(req, res,next){
 
 		var obj=req.params.object;
@@ -57,7 +95,7 @@ function getObject(req, res,next){
 				res.jsonp(result);
 			}	
 		});
-	}
+}
 
 	//Run through validation and presave functions prior to saving
 	function _beforeSave(definition,data, callback){
@@ -231,6 +269,8 @@ exports.express=function(){
 						//Because of the cross-domain restrictions that are not QUITE overcome by CORS in mobile browsers, 
 						// we do allow a '_save' GET request, (instead of a POST)
 						return save(req,res,next);
+					}else if (parts[2]=='count'){
+						return count(req,res,next);
 					}else{
 						req.params.id=parts[2];
 						return getObject(req,res,next);
