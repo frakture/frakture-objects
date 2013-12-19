@@ -30,7 +30,13 @@ function listObject(req, res, next){
 		q=utilities.mongo.convertOid(q);
 	
 		var fields=req.param("fields");
-		if (fields) fields=JSON.parse(fields);
+		try{
+			if (fields) fields=JSON.parse(fields);
+		}catch(e){
+			return res.jsonp(400,"Invalid fields JSON");
+		}
+		if (fields && fields.max) return res.jsonp(400,"Fields projection must not have a field named 'max' -- see MongoDB");
+		
 		if (!fields) fields={};
 		
 		var handle=db.collection(obj).find(q,fields);
@@ -83,13 +89,17 @@ function count(req,res,next){
 function getObject(req, res,next){
 
 		var obj=req.params.object;
-		var id=db.ObjectID.createFromHexString(req.params.id);
+		var id=req.params.id;
+		if (parseInt(id)==id) id=parseInt(id);
+		if (id.length==24) id=db.ObjectID.createFromHexString(req.params.id);
+		
 		var q={_id:id};
 		if (req.param("useGlobal")=='true'){
 			q.account_id={$exists:false};
 		}else{
 			q.account_id=req.user.current_account_id;
 		}
+
 		db.collection(obj).findOne(q,function(err, result) {
 			if (err){ next(err);return;}
 			if (req.param('functions')){
@@ -174,8 +184,8 @@ function getObject(req, res,next){
 				}
 			)},
 			function(err){
-				console.log(err);
 				if (err){
+					console.log(err);
 					res.jsonp(500,err);
 					res.setHeader("Error",err.toString());
 					return;

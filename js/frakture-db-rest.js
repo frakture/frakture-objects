@@ -43,6 +43,13 @@ Frakture.DB.Cursor.prototype._executeFind = function(callback,opts) {
     var data = {};
     
     if (typeof this.query!='object') throw "query must be an object";
+  
+    //Performance optimizations.  Don't run a JSON request if there's no possible result
+    if (this.query._id &&
+    	 (this.query._id==-1 ||
+    	 	(this.query._id["$in"]  && this.query._id["$in"].length==0))
+    	) return callback(null,[]);
+    
     data.q = JSON.stringify(this.query);
     
 	if (this._limit) data.limit = this._limit;
@@ -51,6 +58,8 @@ Frakture.DB.Cursor.prototype._executeFind = function(callback,opts) {
     if (this._skip && !this._sort) throw "skipping entries requires a 'sort'";
     if (this._fields) data.fields = JSON.stringify(this._fields);
     if (this.collection.useGlobal) data.useGlobal = true;
+    
+    
 
     $.ajax({
         url: Frakture.DB.path+"/"+this.collection.name,
@@ -59,7 +68,8 @@ Frakture.DB.Cursor.prototype._executeFind = function(callback,opts) {
         dataType: "json",
         async: async,
         success: Frakture.DB.restSuccess,
-        error: Frakture.DB.restError, _callback:callback
+        error: Frakture.DB.restError,
+        _callback:callback
     });
 };
 
