@@ -13,8 +13,8 @@
   "dependencies": {
     "async": ">=0.2.9",
     "express": ">=3.4.4",
-    "frakture-utility": "latest",
-    "passport": "latest",
+    "frakture-utility": ">=0.1.15",
+    "passport": ">=0.1.17",
     "passport-http-bearer": ">=0.2.1",
     "passport-oauth": ">=0.1.15",
     "passport-google-oauth": ">=0.1.5"
