@@ -218,14 +218,15 @@ Frakture.DB.Collection.prototype.findOne = function(query, callback_or_fields, c
 		}
 		
 		function _callback(err,data){
-			if (err){ console.log(err);
+			if (err){ 
+				console.log(err);
 			}else{
 				$(document).trigger("db."+object+".change",[data]) ;
 			}
 			if (callback) callback(err,data);
 		}
 
-		this._remove.apply(this,arguments);
+		this._remove.apply(this,[query,opts,callback]);
 	}
 	
 }

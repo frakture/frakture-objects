@@ -252,14 +252,20 @@ function update(req, res,next){
 function deleteObjects(req,res,next){
 	var query={};
 	if (req.params.id){
-		 query={_id:db.ObjectID.createFromHexString(req.params.id)};
+		try{
+			//some tables do not user hex strings for ids
+			 query={_id:db.ObjectID.createFromHexString(req.params.id)};
+		}catch(e){
+			if (parseInt(req.params.id)==req.params.id) query={_id:parseInt(req.params.id)};
+			else query={_id:req.params.id};
+		}
 	}else{
 		query=JSON.parse(req.param('q','{}'));
 	}
-
+	
 	if (query.account_id){ next(new Error("account_id cannot be specified in a query"));return;}
 	query.account_id=req.user.current_account_id;
-
+	
 	var obj=req.params.object;
 
 	db.collection(obj).remove(query,{safe:true},function(err, result) {
