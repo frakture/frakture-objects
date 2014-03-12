@@ -15,6 +15,18 @@ Frakture.DB.path=null;
 	Frakture.DB.path=$("<a/>").attr("href",src)[0].pathname.split("/").slice(0,-2).join("/");
 })();
 
+$(function(){
+	var token=$('meta[name="csrf-token"]').attr('content');
+	if (token){
+		jQuery.ajaxPrefilter(function(options, _, xhr) {
+	     if ( !xhr.crossDomain ) 
+    	    xhr.setRequestHeader('X-CSRF-Token', token);
+	  });
+	}
+});
+
+
+
 //Extend Frakture.DB to override certain functions for RESTFUL calls
 Frakture.DB.restSuccess=function(d,s,x){
 	if (this._callback){this._callback(null,d)}
