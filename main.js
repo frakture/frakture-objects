@@ -208,7 +208,11 @@ function update(req, res,next){
 	}else{
 		query=JSON.parse(req.param('q','{}'));
 	}
-	if ("_id" in query && !query._id) throw "_id must not be empty if specified";
+	if ("_id" in query && !query._id){
+		res.jsonp(499,"_id must not be empty if specified");
+		res.setHeader("Error","_id must not be empty if specified");
+		return;
+	}
 
 	//Convert any $oid fields into actual BSON objects
 	query=utilities.mongo.convertOid(query);
@@ -218,7 +222,7 @@ function update(req, res,next){
 
 	_beforeSave(definition,data,function(errs,newData){
 		if (errs){
-			res.jsonp(499,err);
+			res.jsonp(499,errs);
 			res.setHeader("Error",err.toString());
 			return;
 		}else{
@@ -228,13 +232,19 @@ function update(req, res,next){
 			query.account_id=req.user.current_account_id;
 
 			if (data.account_id){next(new Error("account_id cannot be a specified field"));return;}
-			data.account_id=req.user.current_account_id;
 
-
-			//Not a direct map of the 'update' command, because it's annoying to specify every field.  Thus we use '$set'
+			//Log a warning if there are not update fields, and assume set
 			delete data._id;
+			var hasDollarField=false;
+			for (i in data){
+				if (i.indexOf('$')==0){ hasDollarField=true; break;}
+			}
+			updateData=data;
+			if (!hasDollarField){
+				console.error("Warning, a DB update call for collection "+obj+" does not specify any update fields, assuming $set.  Referer="+req.headers.referer);
+				updateData={$set:data};
+			}
 
-			var updateData={$set:data};
 
 			db.collection(obj).findAndModify(query,[['_id','asc']],updateData,{safe:true,"new":true,upsert:true},function(err, result) {
 				if (err){
