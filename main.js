@@ -219,6 +219,9 @@ function update(req, res,next){
 
 	var data=JSON.parse(req.param('data'));
 	data=utilities.mongo.convertOid(data);
+	//convert any $date objects to real dates
+	data=utilities.mongo.convertDate(data);
+	
 
 	_beforeSave(definition,data,function(errs,newData){
 		if (errs){
