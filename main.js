@@ -154,6 +154,7 @@ function getObject(req, res,next){
 		
 		async.eachSeries(arrayRequestData,function(data,dataCallback){
 			_beforeSave(definition,data,function(err,modifiedData){
+				
 				data=modifiedData;
 				if (err){ dataCallback(err); return;}
 
@@ -172,12 +173,12 @@ function getObject(req, res,next){
 							dataCallback();
 						});
 					}else{
-						db.collection(obj).save(data,{safe:true},function(err,d){
+						db.collection(obj).save(data,{safe:true},function(err){
 							if (err){
 								results.push(null);
 								 return dataCallback(err);
 							}
-							results.push(d._id);
+							results.push(data._id);
 							dataCallback();
 						});
 					}
