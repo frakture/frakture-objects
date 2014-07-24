@@ -205,7 +205,11 @@ function update(req, res,next){
 	var definition=Frakture.Objects[obj] || {};
 	var query={};
 	if (req.params.id){
-		 query={_id:db.ObjectID.createFromHexString(req.params.id)};
+		var val=parseInt(req.params.id);
+		if (val!=req.params.id){
+			val=db.ObjectID.createFromHexString(req.params.id)
+		}
+		 query={_id:val};
 	}else{
 		query=JSON.parse(req.param('q','{}'));
 	}
