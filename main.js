@@ -90,8 +90,9 @@ function getObject(req, res,next){
 
 		var obj=req.params.object;
 		var id=req.params.id;
-		if (parseInt(id)==id) id=parseInt(id);
 		if (id.length==24) id=db.ObjectID.createFromHexString(req.params.id);
+		else if (parseInt(id)==id) id=parseInt(id);
+		
 		
 		var q={_id:id};
 		if (req.param("useGlobal")=='true'){
@@ -102,6 +103,7 @@ function getObject(req, res,next){
 
 		db.collection(obj).findOne(q,function(err, result) {
 			if (err){ next(err);return;}
+			if (!result) return next("Could not find:"+JSON.stringify(q));
 			if (req.param('functions')){
 				res.set('Content-Type', 'application/javascript');
 
