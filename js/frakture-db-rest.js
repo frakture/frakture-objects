@@ -72,10 +72,10 @@ Frakture.DB.Cursor.prototype._executeFind = function(callback,opts) {
     if (this.collection.useGlobal) data.useGlobal = true;
     
     
-
+	//changed to POST and /list, because of potential long queries
     $.ajax({
-        url: Frakture.DB.path+"/"+this.collection.name,
-        type: "get",
+        url: Frakture.DB.path+"/"+this.collection.name+"/list",
+        type: "post",
         data: data,
         dataType: "json",
         async: async,

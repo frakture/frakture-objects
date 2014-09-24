@@ -319,6 +319,9 @@ exports.express=function(){
 				};
 				break;
 			case "POST":
+				//Because of unfortunate limitations on the size of a GET query, allow for POST requests to /list
+				if (parts[2]=="list") return listObject(req,res,next);
+				
 				return save(req,res,next);
 				break;
 			
