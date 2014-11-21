@@ -163,6 +163,9 @@ function getObject(req, res,next){
 				if (data.account_id && (data.account_id !=req.user.current_account_id)){next(new Error("a different account_id was specified than this users current account"));return;}
 	
 				data.account_id=req.user.current_account_id;
+				
+				//clear empty _id's
+				if (!data._id) delete data._id;
 			
 					//Some collections, like 'code', are incremental
 					if (['code','message'].indexOf(obj)>=0 && !data._id){
