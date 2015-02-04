@@ -3,7 +3,7 @@
   "name": "frakture-objects",
   "description": "Frakture Object API for Express",
   "keywords": [],
-  "version": "0.1.21",
+  "version": "0.1.22",
   "homepage": "https://github.com/frakture/frakture-objects",
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
   "dependencies": {
     "async": ">=0.2.9",
     "express": ">=3.4.4",
-    "frakture-utility": ">=0.1.17",
+    "frakture-utility": ">=0.1.61",
     "passport": ">=0.1.17",
     "passport-http-bearer": ">=0.2.1",
     "passport-oauth": ">=0.1.15",

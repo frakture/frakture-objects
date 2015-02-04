@@ -12,11 +12,11 @@ function listObject(req, res, next){
 		
 		try{
 			if (typeof q._id=='string'){
-				 q._id=db.ObjectID.createFromHexString(q._id);
+				 q._id=utilities.mongo.getObjectID(q._id);
 			}else if (Array.isArray(q._id["$in"])){
-				q._id["$in"]=q._id["$in"].map(function(d){return db.ObjectID.createFromHexString(d)});
+				q._id["$in"]=q._id["$in"].map(function(d){return utilities.mongo.getObjectID(d)});
 			}else if (Array.isArray(q._id["$nin"])){
-				q._id["$nin"]=q._id["$nin"].map(function(d){return db.ObjectID.createFromHexString(d)});
+				q._id["$nin"]=q._id["$nin"].map(function(d){return utilities.mongo.getObjectID(d)});
 			}
 		}catch(e){}
 		
@@ -62,7 +62,7 @@ function count(req,res,next){
 		
 		try{
 			if (typeof q._id=='string'){
-				 q._id=db.ObjectID.createFromHexString(q._id);
+				 q._id=utilities.mongo.getObjectID(q._id);
 			}
 		}catch(e){}
 	
@@ -90,7 +90,7 @@ function getObject(req, res,next){
 
 		var obj=req.params.object;
 		var id=req.params.id;
-		if (id.length==24) id=db.ObjectID.createFromHexString(req.params.id);
+		if (id.length==24) id=utilities.mongo.getObjectID(req.params.id);
 		else if (parseInt(id)==id) id=parseInt(id);
 		
 		
@@ -118,7 +118,7 @@ function getObject(req, res,next){
 	function _beforeSave(definition,data, callback){
 		if (data._id && typeof data._id=='string'){
 			try{
-				data._id=db.ObjectID.createFromHexString(data._id);
+				data._id=utilities.mongo.getObjectID(data._id);
 			}catch(e){
 			}
 		}
@@ -212,7 +212,7 @@ function update(req, res,next){
 	if (req.params.id){
 		var val=parseInt(req.params.id);
 		if (val!=req.params.id){
-			val=db.ObjectID.createFromHexString(req.params.id)
+			val=utilities.mongo.getObjectID(req.params.id)
 		}
 		 query={_id:val};
 	}else{
@@ -277,7 +277,7 @@ function deleteObjects(req,res,next){
 	if (req.params.id){
 		try{
 			//some tables do not user hex strings for ids
-			 query={_id:db.ObjectID.createFromHexString(req.params.id)};
+			 query={_id:utilities.mongo.getObjectID(req.params.id)};
 		}catch(e){
 			if (parseInt(req.params.id)==req.params.id) query={_id:parseInt(req.params.id)};
 			else query={_id:req.params.id};
