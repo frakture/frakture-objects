@@ -19,7 +19,7 @@ function listObject(req, res, next){
 				q._id["$nin"]=q._id["$nin"].map(function(d){return utilities.mongo.getObjectID(d)});
 			}
 		}catch(e){}
-		
+		q=utilities.js.parseRegExp(q);
 	
 		if (req.param("useGlobal")=='true'){
 			q.account_id={$exists:false};
@@ -44,11 +44,21 @@ function listObject(req, res, next){
 			handle.sort(JSON.parse(req.param("sort")));
 		}
 		
+		var limit=req.param("limit");
+		if (limit==parseInt(limit)){
+			if (limit>500) limit=500;
+			handle.limit(parseInt(limit));
+		}
+		
+		var skip=req.param("offset");
+		if (skip==parseInt(skip)){
+			handle.skip(parseInt(skip));
+		}
+		
 		handle.toArray(function(err, result) {
 			if (err){ console.error(q); next(err);return;}
 			if (req.param('functions')){
 				res.set('Content-Type', 'application/javascript');
-
 				return res.send(utilities.js.serialize(result));
 			}else{
 				res.jsonp(result);
