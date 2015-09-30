@@ -6,19 +6,26 @@ var utilities=require("frakture-utility"),
 
 Frakture={Objects:{}};
 
+function getId(id){
+	if (parseInt(id)==id) return parseInt(id);
+	return utilities.mongo.getObjectID(id);
+}
+
 function listObject(req, res, next){
 		var obj=req.params.object;
 		var q=utilities.js.safeEval(req.param('q','{}'));
 		
 		try{
 			if (typeof q._id=='string'){
-				 q._id=utilities.mongo.getObjectID(q._id);
+				 q._id=getId(q._id);
 			}else if (Array.isArray(q._id["$in"])){
-				q._id["$in"]=q._id["$in"].map(function(d){return utilities.mongo.getObjectID(d)});
+				q._id["$in"]=q._id["$in"].map(function(d){return getId(d)});
 			}else if (Array.isArray(q._id["$nin"])){
-				q._id["$nin"]=q._id["$nin"].map(function(d){return utilities.mongo.getObjectID(d)});
+				q._id["$nin"]=q._id["$nin"].map(function(d){return getId(d)});
 			}
-		}catch(e){}
+		}catch(e){
+			console.error(e);
+		}
 		q=utilities.js.parseRegExp(q);
 	
 		if (req.param("useGlobal")=='true'){
