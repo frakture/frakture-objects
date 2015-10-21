@@ -14,17 +14,16 @@ function getId(id){
 function listObject(req, res, next){
 		var obj=req.params.object;
 		var q=utilities.js.safeEval(req.param('q','{}'));
-		
 		try{
 			if (typeof q._id=='string'){
 				 q._id=getId(q._id);
-			}else if (Array.isArray(q._id["$in"])){
+			}else if (q._id && Array.isArray(q._id["$in"])){
 				q._id["$in"]=q._id["$in"].map(function(d){return getId(d)});
-			}else if (Array.isArray(q._id["$nin"])){
+			}else if (q._id && Array.isArray(q._id["$nin"])){
 				q._id["$nin"]=q._id["$nin"].map(function(d){return getId(d)});
 			}
 		}catch(e){
-			console.error(e);
+			console.error("FraktureObjects: Error getting _id:",e);
 		}
 		q=utilities.js.parseRegExp(q);
 	
