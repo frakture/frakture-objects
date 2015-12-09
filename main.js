@@ -1,8 +1,14 @@
 //Handles some things some as re and de-dollar signing queries
 var utilities=require("frakture-utility"),
 	express=require("express"),
-	db = utilities.mongo.getDB(),
+	db = null,
 	async=require("async");
+
+utilities.mongo.init(function(e,_db){
+		if (e) throw e;
+		db=_db;
+	});
+
 
 Frakture={Objects:{}};
 
@@ -314,7 +320,7 @@ function deleteObjects(req,res,next){
 }
 
 exports.express=function(){
-	return function(req,res,next){
+		return function(req,res,next){
 		
 		var parts=req.url.split("?")[0].split("/");
 		if (parts[1]=="js") return express.static(__dirname)(req,res,next);
@@ -356,6 +362,6 @@ exports.express=function(){
 				break;
 			}
 			next();
-	}
+	 }
 }
 
