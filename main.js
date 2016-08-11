@@ -234,7 +234,7 @@ function update(req, res,next){
 	if (req.params.id){
 		var val=parseInt(req.params.id);
 		if (val!=req.params.id){
-			val=utilities.mongo.getObjectID(req.params.id)
+			val=utilities.mongo.getObjectID(req.params.id,true)
 		}
 		 query={_id:val};
 	}else{
