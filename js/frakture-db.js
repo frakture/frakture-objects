@@ -197,7 +197,7 @@ Frakture.DB.Collection.prototype.findOne = function(query, callback_or_fields, c
 				 console.log(err);
 			}else{
 				objNew._id=data._ids[0];
-				$(document).trigger("db."+object+".change",[data]) ;
+				$(document).trigger("db."+object+".change",[data]);
 			}
 			
 			if (callback) callback(err,objNew);
