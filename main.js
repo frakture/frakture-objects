@@ -33,6 +33,13 @@ Model.prototype.save=function(options,callback){
 	m.conn.save(options,callback);
 }
 
+Model.prototype.tag=function(options,callback){
+	var m=this;
+	options.table=this.table;
+	m.conn.tag(options,callback);
+}
+
+
 
 function descToJSON(desc){
 	var schema=	{
@@ -244,7 +251,25 @@ var ORM=function(_config){
 			});
 		});
 	}
+	
+	function tag(req,res,next){
+		var obj=req.params.object;
+	
+		getModel({name:obj, connection:req.params.connection},function(e,m){
+			if (e){
+				if (parseInt(e)==e) return res.jsonp(e,m);
+				return res.jsonp(500,e);
+			}
+			var o=utilities.js.extend({},req.query);
+			o.object=obj;
+			o.id=req.params.id;
 
+			m.tag(o,function(err, result) {
+				if (err){ console.error(opts); next(err);return;}
+				res.jsonp(result);
+			});
+		});
+	}
 	
 	function count(req,res,next){
 		var obj=req.params.object;
@@ -281,7 +306,7 @@ var ORM=function(_config){
 			var id=req.params.id;
 			id=utilities.mongo.getObjectID(req.params.id,true);
 			if (parseInt(id)==id) id=parseInt(id);
-			m.primary_key=m.primary_key||"_id";
+			m.primary_key=m.primary_key||"id";
 			var filter={};
 			
 			filter[m.primary_key]=id;
@@ -304,7 +329,7 @@ var ORM=function(_config){
 	}
 
 	//Run through validation and presave functions prior to saving
-	function _beforeSave(definition,data, callback){
+	function _beforeSave(model,data, callback){
 		if (data._id && typeof data._id=='string'){
 			try{
 				data._id=utilities.mongo.getObjectID(data._id);
@@ -312,10 +337,10 @@ var ORM=function(_config){
 			}
 		}
 		var errs=[];
-		for (i in definition.validation){
-			var func=definition.validation[i];
+		for (i in model.validation){
+			var func=model.validation[i];
 			if (typeof func!='function'){
-				 next(new Error("Invalid object definition, bad validation function:"+obj)); return;
+				 next(new Error("Invalid object model, bad validation function:"+obj)); return;
 			}
 			try{
 				func(data);
@@ -335,7 +360,7 @@ var ORM=function(_config){
 	//CREATE
 	function save(req,res, next){
 		var obj=req.params.object;
-		var definition=models[obj] || {};
+		
 		var d=(req.query||{}).data || (req.body||{}).data;
 		
 		if (!d){ next(new Error("No parameter 'data' found in "+JSON.stringify(req.body))); return;}
@@ -350,7 +375,7 @@ var ORM=function(_config){
 			var results=[];
 		
 			async.eachSeries(arrayRequestData,function(data,dataCallback){
-				_beforeSave(definition,data,function(err,modifiedData){
+				_beforeSave(m,data,function(err,modifiedData){
 				
 					data=modifiedData;
 					if (err){ dataCallback(err); return;}
@@ -391,8 +416,9 @@ var ORM=function(_config){
 	//SINGLE OR MULTIPLE UPDATE
 	//If there's an ID specified, it's single, else it's multiple
 	function update(req, res,next){
+		return next("Bulk update not supported, use save");
 		var obj=req.params.object;
-		var definition=models[obj] || {};
+		
 		var query={};
 		if (req.params.id){
 			var val=parseInt(req.params.id);
@@ -404,9 +430,10 @@ var ORM=function(_config){
 			query=JSON.parse(req.body.q);
 		}
 		
-		if ("_id" in query && !query._id){
-			res.jsonp(499,"_id must not be empty if specified");
-			res.setHeader("Error","_id must not be empty if specified");
+		
+		if ("id" in query && !query.id){
+			res.jsonp(499,"id must not be empty if specified");
+			res.setHeader("Error","id must not be empty if specified");
 			return;
 		}
 
@@ -419,45 +446,55 @@ var ORM=function(_config){
 		data=utilities.mongo.convertDate(data);
 	
 
-		_beforeSave(definition,data,function(errs,newData){
-			if (errs){
-				res.jsonp(499,errs);
-				res.setHeader("Error",err.toString());
-				return;
-			}else{
-				data=newData;
-
-				if (query.account_id){ next(new Error("account_id cannot be specified in a query"));return;}
-				/*
-				TODO
-				query.account_id=req.user.current_account_id;
-				*/
-
-				if (data.account_id){next(new Error("account_id cannot be a specified field"));return;}
-
-				//Log a warning if there are not update fields, and assume set
-				delete data._id;
-				var hasDollarField=false;
-				for (i in data){
-					if (i.indexOf('$')==0){ hasDollarField=true; break;}
-				}
-				updateData=data;
-				if (!hasDollarField){
-					console.error("Warning, a DB update call for collection "+obj+" does not specify any update fields, assuming $set.  Referer="+req.headers.referer);
-					updateData={$set:data};
-				}
-
-
-				db.collection(obj).findAndModify(query,[['_id','asc']],updateData,{safe:true,"new":true,upsert:true},function(err, result) {
-					if (err){
-						res.jsonp(500,err);
-						res.setHeader("Error",err.toString());
-						return;
-					}
-	
-					res.jsonp(result);
-				});
+		getModel({name:req.params.object, connection:req.params.connection},function(e,m){
+			if (e){
+				if (parseInt(e)==e) return res.jsonp(e,m);
+				return res.jsonp(500,e);
 			}
+
+			_beforeSave(m,data,function(errs,newData){
+				if (errs){
+					res.jsonp(499,errs);
+					res.setHeader("Error",err.toString());
+					return;
+				}else{
+					data=newData;
+
+					if (query.account_id){ next(new Error("account_id cannot be specified in a query"));return;}
+					/*
+					TODO
+					query.account_id=req.user.current_account_id;
+					*/
+
+					if (data.account_id){next(new Error("account_id cannot be a specified field"));return;}
+
+				
+					delete data._id;
+					//Log a warning if there are not update fields, and assume set
+				
+				
+				
+					var hasDollarField=false;
+					for (i in data){
+						if (i.indexOf('$')==0){ hasDollarField=true; break;}
+					}
+					updateData=data;
+					if (!hasDollarField){
+						console.error("Warning, a DB update call for collection "+obj+" does not specify any update fields, assuming $set.  Referer="+req.headers.referer);
+						updateData={$set:data};
+					}
+
+					db.collection(obj).findAndModify(query,[['_id','asc']],updateData,{safe:true,"new":true,upsert:true},function(err, result) {
+						if (err){
+							res.jsonp(500,err);
+							res.setHeader("Error",err.toString());
+							return;
+						}
+	
+						res.jsonp(result);
+					});
+				}
+			});
 		});
 	}
 
@@ -510,6 +547,7 @@ var ORM=function(_config){
 							return schema(req,res,next);
 						}else{
 							req.params.id=parts[2];
+							if (parts[3]=="tag"){return tag(req,res,next);}
 							return getObject(req,res,next);
 						}
 					};
@@ -523,9 +561,10 @@ var ORM=function(_config){
 		
 				case "PUT":  //   /:object/:id
 					if (parts[2]){req.params.id=parts[2];}
+					if (parts[3]=="tag"){return tag(req,res,next);}
+					
 					return update(req,res,next);
-	
-
+					
 				//DELETE
 				case "DELETE":
 					if (parts[2]){req.params.id=parts[2];}
