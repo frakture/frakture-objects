@@ -90,6 +90,29 @@ Frakture.DB.Cursor.prototype.forEach = function(callback,opts) {
 	});
 };
 
+/* Returns an object suitable for quick lookups, instead of an array */
+Frakture.DB.Cursor.prototype.toMap = function(callback,opts) {
+	opts = opts || {};
+	if (!callback || callback.length<2){throw "Error -- toArray requires a callback with at least 2 (err and data) arguments";}
+
+    function _callbackArray(err,arr){
+    	var o={};
+		for (i in arr){
+			var k=arr[i].id;
+			o[k]=arr[i];
+		}
+		callback(err,o);
+    };
+    
+    this.executeFind(_callbackArray,{
+        async: opts.async === true || false
+	});
+}
+
+
+
+
+
 /* 
  *
  * Available options:
@@ -163,6 +186,7 @@ Frakture.DB.Collection.prototype.findOne = function(query, callback_or_fields, c
 	Frakture.DB.Collection.prototype.update = function(query, objNew, opts_or_callback,callback) {
 		if (!this._update) throw "Not implemented";
 		var object=this.name;
+		if (query._id){ query.id=query._id; delete query._id;}
 		
 		var opts={};
 		if (typeof opts_or_callback=='function'){
@@ -196,14 +220,13 @@ Frakture.DB.Collection.prototype.findOne = function(query, callback_or_fields, c
 			if (err){
 				 console.log(err);
 			}else{
-				objNew._id=data._ids[0];
 				$(document).trigger("db."+object+".change",[data]);
 			}
 			
-			if (callback) callback(err,objNew);
+			if (callback) callback(err,data);
 		}
 
-		this._save.apply(this,[objNew,opts,_callback]);
+		this._save.apply(this,[data,opts,_callback]);
 	}
 
 	Frakture.DB.Collection.prototype.remove = function(query, opts_or_callback,callback) {

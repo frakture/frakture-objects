@@ -57,9 +57,9 @@ Frakture.DB.Cursor.prototype._executeFind = function(callback,opts) {
     if (typeof this.query!='object') throw "query must be an object";
   
     //Performance optimizations.  Don't run a JSON request if there's no possible result
-    if (this.query._id &&
-    	 (this.query._id==-1 ||
-    	 	(this.query._id["$in"]  && this.query._id["$in"].length==0))
+    if (this.query.id &&
+    	 (this.query.id==-1 ||
+    	 	(this.query.id["$in"]  && this.query.id["$in"].length==0))
     	) return callback(null,[]);
     
     data.q = JSON.stringify(this.query);
@@ -136,7 +136,7 @@ Frakture.DB.Collection.prototype._update = function(query, objNew, opts,callback
         return;
     }
     
-    if ("_id" in query && query._id===undefined) throw "db-rest update: query contains an _id that is not defined.  Please remove _id or provide a valid _id.";
+    if ("id" in query && query.id===undefined) throw "db-rest update: query contains an id that is not defined.  Please remove id or provide a valid id.";
     
 	
     var data = {};
@@ -154,7 +154,7 @@ Frakture.DB.Collection.prototype._update = function(query, objNew, opts,callback
     }
     
     var url=Frakture.DB.path+"/"+this.name;
-    if (query._id) url+="/"+query._id;
+    if (query.id) url+="/"+query.id;
 
     $.ajax({
         url: url,
@@ -180,7 +180,6 @@ Frakture.DB.Collection.prototype._save = function(objNew, opts, callback) {
     
     var data = {};
     if (this.useGlobal) {data.useGlobal = true;}
-    
     
     data.data = JSON.stringify(objNew);
     $.ajax({
@@ -211,7 +210,7 @@ Frakture.DB.Collection.prototype._remove = function(query, opts,callback) {
    if (this.useGlobal) { data.useGlobal = true; }
 
     var url=Frakture.DB.path+"/"+this.name;
-    if (query._id) url+="/"+query._id.toString();
+    if (query.id) url+="/"+query.id.toString();
 
     $.ajax({
         url: url,

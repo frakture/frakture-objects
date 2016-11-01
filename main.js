@@ -27,11 +27,24 @@ Model.prototype.find=function(options,callback){
 	m.conn.find(options,callback);
 }
 
-Model.prototype.save=function(options,callback){
+Model.prototype.insert=function(options,callback){
 	var m=this;
 	options.table=this.table;
-	m.conn.save(options,callback);
+	m.conn.insert(options,callback);
 }
+
+Model.prototype.update=function(options,callback){
+	var m=this;
+	options.table=this.table;
+	m.conn.update(options,callback);
+}
+
+Model.prototype.remove=function(options,callback){
+	var m=this;
+	options.table=this.table;
+	m.conn.remove(options,callback);
+}
+
 
 Model.prototype.tag=function(options,callback){
 	var m=this;
@@ -151,6 +164,7 @@ var ORM=function(_config){
 			}
 			
 			var filters=[].concat(instanceConfig.filters).concat(modelConfig.filters).filter(Boolean);
+			var beforeSave=[].concat(instanceConfig.beforeSave).concat(modelConfig.beforeSave).filter(Boolean);
 			
 			var schemas=[].concat(instanceConfig.schemas).concat(modelConfig.schemas).filter(Boolean);
 
@@ -160,7 +174,8 @@ var ORM=function(_config){
 				table:modelConfig.table || options.name,
 				schemas:schemas,
 				filters:filters,
-				primary_key:modelConfig.primary_key
+				beforeSave:beforeSave,
+				primary_key:modelConfig.primary_key || "id"
 			});
 		
 			models[id]=m;
@@ -223,11 +238,16 @@ var ORM=function(_config){
 
 			var filters=[q].concat(m.filters);
 			opts.filter=getFilters(req,filters);
+			
+			console.error(opts);
 
 			m.find(opts,function(err, result) {
-				utilities.js.timer("completed find");
 				if (err){ console.error(opts); next(err);return;}
 				var r=result.results;
+				if(!r){
+					console.error(result);
+					return res.jsonp(500,"Error getting results");
+				}
 				res.jsonp(r);
 			});
 		});
@@ -304,8 +324,7 @@ var ORM=function(_config){
 			}
 			
 			var id=req.params.id;
-			id=utilities.mongo.getObjectID(req.params.id,true);
-			if (parseInt(id)==id) id=parseInt(id);
+			
 			m.primary_key=m.primary_key||"id";
 			var filter={};
 			
@@ -329,122 +348,50 @@ var ORM=function(_config){
 	}
 
 	//Run through validation and presave functions prior to saving
-	function _beforeSave(model,data, callback){
-		if (data._id && typeof data._id=='string'){
-			try{
-				data._id=utilities.mongo.getObjectID(data._id);
-			}catch(e){
-			}
-		}
+	function _beforeSave(req,model,id,name,data, options, callback){
+		
 		var errs=[];
-		for (i in model.validation){
-			var func=model.validation[i];
-			if (typeof func!='function'){
-				 next(new Error("Invalid object model, bad validation function:"+obj)); return;
-			}
-			try{
-				func(data);
-			}catch(err){
-				if (err.length){errs=errs.concat(err);}
-				else errs.push(err);
-			}
-		}
-
-		if (errs.length>0){
-			callback(errs);
-		}else{
-			callback(null,data);
-		}
-	}
-
-	//CREATE
-	function save(req,res, next){
-		var obj=req.params.object;
 		
-		var d=(req.query||{}).data || (req.body||{}).data;
+		async.eachSeries(model.beforeSave,function(f,fcb){
+			f({name:name,request:req,id:id,data:data},fcb);
+		},function(e){
+			if (e) return callback(e);
 		
-		if (!d){ next(new Error("No parameter 'data' found in "+JSON.stringify(req.body))); return;}
-		var requestData=JSON.parse(d);
-		
-		getModel({name:req.params.object, connection:req.params.connection},function(e,m){
-			if (e){
-				if (parseInt(e)==e) return res.jsonp(e,m);
-				return res.jsonp(500,e);
-			}
-			var arrayRequestData=Array.isArray(requestData)?requestData:[requestData];
-			var results=[];
-		
-			async.eachSeries(arrayRequestData,function(data,dataCallback){
-				_beforeSave(m,data,function(err,modifiedData){
-				
-					data=modifiedData;
-					if (err){ dataCallback(err); return;}
-				
-				
-					/*
-					//Need to add this back in with filters at some point
-					if (data.account_id && (data.account_id !=req.user.current_account_id)){next(new Error("a different account_id was specified than this users current account"));return;}
-	
-					data.account_id=req.user.current_account_id;
-					code and message are also incremental, so standard save won't work
-					*/
-						m.save({data:data},function(err, result) {
-							if (err){
-									results.push(null);
-									 return dataCallback(err);
-								}
-								results.push(result._id);
-								dataCallback();
-						});
-					}
-				)},
-				function(err){
-					if (err){
-						console.log(err);
-						res.jsonp(500,err);
-						res.setHeader("Error",err.toString());
-						return;
-					}else{
-						res.jsonp({success:true,_ids:results});
-					}
+			var errs=[];
+			for (i in model.validation){
+				var func=model.validation[i];
+				if (typeof func!='function'){
+					 next(new Error("Invalid object model, bad validation function:"+obj)); return;
 				}
-			);
+				try{
+					func(data);
+				}catch(err){
+					if (err.length){errs=errs.concat(err);}
+					else errs.push(err);
+				}
+			}
+
+			if (errs.length>0){
+				callback(errs);
+			}else{
+				callback(null,data);
+			}
+		
 		});
+		
+		
 	}
 
+	//SINGLE RECORD UPSERT
+	//This does NOT handle bulk updates right now
 
-	//SINGLE OR MULTIPLE UPDATE
-	//If there's an ID specified, it's single, else it's multiple
-	function update(req, res,next){
-		return next("Bulk update not supported, use save");
+	function upsert(req, res,next){
 		var obj=req.params.object;
 		
-		var query={};
-		if (req.params.id){
-			var val=parseInt(req.params.id);
-			if (val!=req.params.id){
-				val=utilities.mongo.getObjectID(req.params.id,true)
-			}
-			 query={_id:val};
-		}else{
-			query=JSON.parse(req.body.q);
-		}
+		var id=req.params.id;
 		
-		
-		if ("id" in query && !query.id){
-			res.jsonp(499,"id must not be empty if specified");
-			res.setHeader("Error","id must not be empty if specified");
-			return;
-		}
-
-		//Convert any $oid fields into actual BSON objects
-		query=utilities.mongo.convertOid(query);
-
 		var data=JSON.parse(req.body.data || req.query.data);
-		data=utilities.mongo.convertOid(data);
-		//convert any $date objects to real dates
-		data=utilities.mongo.convertDate(data);
-	
+		
 
 		getModel({name:req.params.object, connection:req.params.connection},function(e,m){
 			if (e){
@@ -452,78 +399,75 @@ var ORM=function(_config){
 				return res.jsonp(500,e);
 			}
 
-			_beforeSave(m,data,function(errs,newData){
+			_beforeSave(req,m,id,m.name,data, {},function(errs){
+				if (!data.account_id) return res.jsonp(500,"No error specified");
+
 				if (errs){
 					res.jsonp(499,errs);
 					res.setHeader("Error",err.toString());
 					return;
 				}else{
-					data=newData;
 
-					if (query.account_id){ next(new Error("account_id cannot be specified in a query"));return;}
-					/*
-					TODO
-					query.account_id=req.user.current_account_id;
-					*/
-
-					if (data.account_id){next(new Error("account_id cannot be a specified field"));return;}
-
-				
-					delete data._id;
+					//ID has already been specified, don't duplicate it
+					delete data[m.primary_key];
 					//Log a warning if there are not update fields, and assume set
-				
-				
-				
-					var hasDollarField=false;
-					for (i in data){
-						if (i.indexOf('$')==0){ hasDollarField=true; break;}
-					}
-					updateData=data;
-					if (!hasDollarField){
-						console.error("Warning, a DB update call for collection "+obj+" does not specify any update fields, assuming $set.  Referer="+req.headers.referer);
-						updateData={$set:data};
-					}
-
-					db.collection(obj).findAndModify(query,[['_id','asc']],updateData,{safe:true,"new":true,upsert:true},function(err, result) {
-						if (err){
-							res.jsonp(500,err);
-							res.setHeader("Error",err.toString());
-							return;
-						}
+					
+					if (id){
+						m.update({id:id,data:data},function(err,result){
+							if (err){
+								res.jsonp(500,err);
+								res.setHeader("Error",err.toString());
+								return;
+							}
 	
-						res.jsonp(result);
-					});
+							res.jsonp(result.data);
+						});
+					}else{
+						m.insert({data:data},function(err,result){
+							if (err){
+								res.jsonp(500,err);
+								res.setHeader("Error",err.toString());
+								return;
+							}
+	
+							res.jsonp(result.data);
+						});
+					}
 				}
 			});
 		});
 	}
-
-	function deleteObjects(req,res,next){
-		var query={};
-		if (req.params.id){
-			try{
-				//some tables do not user hex strings for ids
-				 query={_id:utilities.mongo.getObjectID(req.params.id)};
-			}catch(e){
-				if (parseInt(req.params.id)==req.params.id) query={_id:parseInt(req.params.id)};
-				else query={_id:req.params.id};
-			}
-		}else{
-			query=JSON.parse(req.body.q || req.query.q);
-		}
 	
-		if (query.account_id){ next(new Error("account_id cannot be specified in a query"));return;}
-		//TODO
-		//query.account_id=req.user.current_account_id;
-	
+	function deleteObjects(req, res,next){
 		var obj=req.params.object;
-
-		db.collection(obj).remove(query,{safe:true},function(err, result) {
-			if (err){ next(err);return;}
-			res.jsonp(result);
+		getModel({name:req.params.object, connection:req.params.connection},function(e,m){
+			if (e){
+				if (parseInt(e)==e) return res.jsonp(e,m);
+				return res.jsonp(500,e);
+			}
+			
+			m.primary_key=m.primary_key||"id";
+			
+			var filter={};
+			if (req.params.id){
+				filter[m.primary_key]=req.params.id;
+				
+			}else{
+				return next("multiple delete not currently supported");
+			}
+			
+			var filters=[filter].concat(m.filters);
+			var opts={};
+			
+			opts.filter=getFilters(req,filters);
+			
+			m.remove(opts,function(err, result) {
+				if (err){ console.error(opts); next(err);return;}
+				res.jsonp(result);
+			});
 		});
 	}
-
+	
 	this.express=function(){
 
 		return function(req,res,next){
@@ -556,14 +500,14 @@ var ORM=function(_config){
 					//Because of unfortunate limitations on the size of a GET query, allow for POST requests to /list
 					if (parts[2]=="list") return listObject(req,res,next);
 			
-					return save(req,res,next);
+					return upsert(req,res,next);
 					break;
 		
 				case "PUT":  //   /:object/:id
 					if (parts[2]){req.params.id=parts[2];}
 					if (parts[3]=="tag"){return tag(req,res,next);}
 					
-					return update(req,res,next);
+					return upsert(req,res,next);
 					
 				//DELETE
 				case "DELETE":
