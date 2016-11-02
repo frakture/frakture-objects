@@ -3,6 +3,10 @@ var utilities=require("frakture-utility"),
 	express=require("express"),
 	workerbots=require("frakture-workerbots"),
 	async=require("async");
+	
+function debug(){
+	console.error.apply(this,arguments);
+}
 
 /*
 	Create a new model.  Should have:
@@ -391,6 +395,8 @@ var ORM=function(_config){
 		var id=req.params.id;
 		
 		var data=JSON.parse(req.body.data || req.query.data);
+		//Legacy support for $set, which is deprecated for an upsert
+		if (data.$set) data=data.$set;
 		
 
 		getModel({name:req.params.object, connection:req.params.connection},function(e,m){
@@ -415,6 +421,7 @@ var ORM=function(_config){
 					if (id){
 						m.update({id:id,data:data},function(err,result){
 							if (err){
+								debug(err);
 								res.jsonp(500,err);
 								res.setHeader("Error",err.toString());
 								return;
@@ -425,6 +432,7 @@ var ORM=function(_config){
 					}else{
 						m.insert({data:data},function(err,result){
 							if (err){
+								debug(err);
 								res.jsonp(500,err);
 								res.setHeader("Error",err.toString());
 								return;

@@ -226,7 +226,7 @@ Frakture.DB.Collection.prototype.findOne = function(query, callback_or_fields, c
 			if (callback) callback(err,data);
 		}
 
-		this._save.apply(this,[data,opts,_callback]);
+		this._save.apply(this,[objNew,opts,_callback]);
 	}
 
 	Frakture.DB.Collection.prototype.remove = function(query, opts_or_callback,callback) {
