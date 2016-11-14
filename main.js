@@ -252,6 +252,13 @@ var ORM=function(_config){
 					console.error(result);
 					return res.jsonp(500,"Error getting results");
 				}
+				r.forEach(function(d){
+					if (d._id){
+						d.id=d._id;
+						delete d._id;
+					}
+					
+				});
 				res.jsonp(r);
 			});
 		});
@@ -341,6 +348,7 @@ var ORM=function(_config){
 			
 			m.findOne(opts,function(err, result) {
 				if (err){ console.error(opts); next(err);return;}
+				if (!result) return res.jsonp(404,{error:"Not found",filter:opts});
 				if (req.query.functions){
 					res.set('Content-Type', 'application/javascript');
 					return res.send(utilities.js.serialize(result));

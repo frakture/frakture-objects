@@ -233,6 +233,8 @@ Frakture.DB.Collection.prototype.findOne = function(query, callback_or_fields, c
 		if (!this._remove) throw "Not implemented";
 		var object=this.name;
 		
+		if (query._id){ query.id=query._id; delete query._id;}
+		
 		var opts={};
 		if (typeof opts_or_callback=='function'){
 			callback=opts_or_callback;
