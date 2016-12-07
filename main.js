@@ -31,6 +31,13 @@ Model.prototype.find=function(options,callback){
 	m.conn.find(options,callback);
 }
 
+Model.prototype.search=function(options,callback){
+	var m=this;
+	options.table=this.table;
+	m.conn.search(options,callback);
+}
+
+
 Model.prototype.insert=function(options,callback){
 	var m=this;
 	options.table=this.table;
@@ -238,14 +245,15 @@ var ORM=function(_config){
 				if (parseInt(e)==e) return res.jsonp(e,m);
 				return res.jsonp(500,e);
 			}
-			var q=(req.body||{}).q || req.query.q;
+			
+			var q=(req.body||{}).q || req.query.q || req.query;
 
 			var filters=[q].concat(m.filters);
 			opts.filter=getFilters(req,filters);
 			
-			console.error(opts);
+			var method=req.params.method || "find";
 
-			m.find(opts,function(err, result) {
+			m[method](opts,function(err, result) {
 				if (err){ console.error(opts); next(err);return;}
 				var r=result.results;
 				if(!r){
@@ -257,7 +265,6 @@ var ORM=function(_config){
 						d.id=d._id;
 						delete d._id;
 					}
-					
 				});
 				res.jsonp(r);
 			});
@@ -345,6 +352,8 @@ var ORM=function(_config){
 			var opts={};
 			
 			opts.filter=getFilters(req,filters);
+			
+			debug("Calling findOne with ",opts);
 			
 			m.findOne(opts,function(err, result) {
 				if (err){ console.error(opts); next(err);return;}
@@ -503,6 +512,9 @@ var ORM=function(_config){
 							return save(req,res,next);
 						}else if (parts[2]=='count'){
 							return count(req,res,next);
+						}else if (parts[2]=='search'){
+							req.params.method="search";
+							return listObject(req,res,next);
 						}else if (parts[2]=='schema'){
 							return schema(req,res,next);
 						}else{
