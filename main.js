@@ -138,6 +138,7 @@ var ORM=function(_config){
 		}
 	
 		var connector=new constructor({auth:config.authentication,account_id:"dev"});
+		console.log(config);
 		return callback(null,connector);
 	}
 
@@ -249,6 +250,7 @@ var ORM=function(_config){
 			var q=(req.body||{}).q || req.query.q || req.query;
 
 			var filters=[q].concat(m.filters);
+			
 			opts.filter=getFilters(req,filters);
 			
 			var method=req.params.method || "find";
@@ -301,7 +303,11 @@ var ORM=function(_config){
 			var o=utilities.js.extend({},req.query);
 			o.object=obj;
 			o.id=req.params.id;
-
+			
+			var filters=m.filters;
+			
+			o.filter=getFilters(req,filters);
+			console.log("Filter:",o);
 			m.tag(o,function(err, result) {
 				if (err){ console.error(opts); next(err);return;}
 				res.jsonp(result);
