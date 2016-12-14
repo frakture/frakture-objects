@@ -212,7 +212,9 @@ var ORM=function(_config){
 
 	function listObject(req, res, next){
 
-		var fields=req.query.fields;
+		var body=utilities.js.extend({},req.body,req.query);
+		
+		var fields=body.fields;
 		try{
 			if (fields) fields=JSON.parse(fields);
 		}catch(e){
@@ -226,17 +228,17 @@ var ORM=function(_config){
 			fields:fields	
 		}
 	
-		if (req.query.sort){
-			opts.sort=JSON.parse(req.query.sort);
+		if (body.sort){
+			opts.sort=JSON.parse(body.sort);
 		}
 	
-		var limit=req.query.limit;
+		var limit=body.limit;
 		if (limit==parseInt(limit)){
 			if (limit>500) limit=500;
 			opts.limit=parseInt(limit);
 		}
 	
-		var skip=req.query.offset;
+		var skip=body.offset;
 		if (skip==parseInt(skip)){
 			opts.skip=parseInt(skip);
 		}
@@ -307,7 +309,7 @@ var ORM=function(_config){
 			var filters=m.filters;
 			
 			o.filter=getFilters(req,filters);
-			console.log("Filter:",o);
+
 			m.tag(o,function(err, result) {
 				if (err){ console.error(opts); next(err);return;}
 				res.jsonp(result);
