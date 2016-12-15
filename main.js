@@ -304,14 +304,14 @@ var ORM=function(_config){
 			}
 			var o=utilities.js.extend({},req.query);
 			o.object=obj;
-			o.id=req.params.id;
+			o.ids=req.params.id || o.ids;
 			
 			var filters=m.filters;
 			
 			o.filter=getFilters(req,filters);
 
 			m.tag(o,function(err, result) {
-				if (err){ console.error(opts); next(err);return;}
+				if (err){ console.error(o); next(err);return;}
 				res.jsonp(result);
 			});
 		});
@@ -423,15 +423,15 @@ var ORM=function(_config){
 		//Legacy support for $set, which is deprecated for an upsert
 		if (data.$set) data=data.$set;
 		
+		console.error("Upsert data request:",data);
 
 		getModel({name:req.params.object, connection:req.params.connection},function(e,m){
 			if (e){
 				if (parseInt(e)==e) return res.jsonp(e,m);
 				return res.jsonp(500,e);
 			}
-
+			console.error("Running before save");
 			_beforeSave(req,m,id,m.name,data, {},function(errs){
-				if (!data.account_id) return res.jsonp(500,"No error specified");
 
 				if (errs){
 					res.jsonp(499,errs);
@@ -444,6 +444,7 @@ var ORM=function(_config){
 					//Log a warning if there are not update fields, and assume set
 					
 					if (id){
+						console.error("Id exists, updating:",id);
 						m.update({id:id,data:data},function(err,result){
 							if (err){
 								debug(err);
@@ -455,6 +456,7 @@ var ORM=function(_config){
 							res.jsonp(result.data);
 						});
 					}else{
+						console.error(data);console.error("Not id, inserting",data);
 						m.insert({data:data},function(err,result){
 							if (err){
 								debug(err);
@@ -520,6 +522,8 @@ var ORM=function(_config){
 							return save(req,res,next);
 						}else if (parts[2]=='count'){
 							return count(req,res,next);
+						}else if (parts[2]=='tag'){
+							return tag(req,res,next);
 						}else if (parts[2]=='search'){
 							req.params.method="search";
 							return listObject(req,res,next);
@@ -540,6 +544,8 @@ var ORM=function(_config){
 					break;
 		
 				case "PUT":  //   /:object/:id
+					if (parts[2]=="tag"){return tag(req,res,next);}
+					
 					if (parts[2]){req.params.id=parts[2];}
 					if (parts[3]=="tag"){return tag(req,res,next);}
 					
