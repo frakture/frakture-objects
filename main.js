@@ -2,7 +2,8 @@
 var utilities=require("frakture-utility"),
 	express=require("express"),
 	workerbots=require("frakture-workerbots"),
-	async=require("async");
+	async=require("async"),
+	csv=require("csv");
 	
 function debug(){
 	console.error.apply(this,arguments);
@@ -250,6 +251,8 @@ var ORM=function(_config){
 			}
 			
 			var q=(req.body||{}).q || req.query.q || req.query;
+			delete q.limit;
+			delete q.format;
 
 			var filters=[q].concat(m.filters);
 			
@@ -270,7 +273,18 @@ var ORM=function(_config){
 						delete d._id;
 					}
 				});
-				res.jsonp(r);
+				
+				if (body.format=="csv"){
+					  if (r.length==0) r=[{id:""}];
+					  var keys=Object.keys(r[0]);
+					  var data=[keys].concat(r.map(d=>keys.map(k=>d[k])));
+					  console.error(data);
+  
+					  res.attachment(new Date().getTime()+'.csv');
+					  csv.stringify(data).pipe(res);
+				}else{
+					res.jsonp(r);
+				}
 			});
 		});
 	}
