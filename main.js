@@ -135,7 +135,7 @@ var ORM=function(_config){
 			case "mysql":
 				constructor=workerbots("MySQLBot"); break;
 			case "sqlserver":
-				constructor=workerbots("MSSBot"); break;
+				constructor=workerbots("MSSQLBot"); break;
 			default:return callback("Connection type "+config.type+" not supported");
 		}
 	
