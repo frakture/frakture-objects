@@ -140,7 +140,8 @@ var ORM=function(_config){
 		}
 	
 		var connector=new constructor({auth:config.authentication,account_id:"dev"});
-		console.log(config);
+		connector.log=console.error;connector.account_id="dev";
+		
 		return callback(null,connector);
 	}
 
