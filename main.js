@@ -29,6 +29,7 @@ Model.prototype.findOne=function(options,callback){
 Model.prototype.find=function(options,callback){
 	var m=this;
 	options.table=this.table;
+	console.error("Calling find on table "+options.table+" with ",options);
 	m.conn.find(options,callback);
 }
 
@@ -257,6 +258,7 @@ var ORM=function(_config){
 			var filters=[q].concat(m.filters);
 			
 			opts.filter=getFilters(req,filters);
+			debug("Filter:",opts.filter);
 			
 			var method=req.params.method || "find";
 
@@ -316,13 +318,20 @@ var ORM=function(_config){
 				if (parseInt(e)==e) return res.jsonp(e,m);
 				return res.jsonp(500,e);
 			}
+			
+			req.operation="tag";
+			
 			var o=utilities.js.extend({},req.query);
+			
 			o.object=obj;
+			
 			o.ids=req.params.id || o.ids;
 			
 			var filters=m.filters;
 			
 			o.filter=getFilters(req,filters);
+			
+			o.username=req.user.username;
 
 			m.tag(o,function(err, result) {
 				if (err){ console.error(o); next(err);return;}
@@ -394,9 +403,10 @@ var ORM=function(_config){
 	function _beforeSave(req,model,id,name,data, options, callback){
 		
 		var errs=[];
+		debug("Calling beforesave with:",model.beforeSave);
 		
 		async.eachSeries(model.beforeSave,function(f,fcb){
-			f({name:name,request:req,id:id,data:data},fcb);
+			f({object:name,request:req,id:id,data:data},fcb);
 		},function(e){
 			if (e) return callback(e);
 		
@@ -514,6 +524,14 @@ var ORM=function(_config){
 				if (err){ console.error(opts); next(err);return;}
 				res.jsonp(result);
 			});
+		});
+	}
+	
+	this.find=function(options,callback){
+		options.connection=options.connection || "root";
+		getModel({name:options.object || options.name, connection:options.connection},function(e,m){
+			if (e) return callback(e);
+			m.find(options,callback);
 		});
 	}
 	
