@@ -126,7 +126,7 @@ var ORM=function(_config){
 
 	function getConnection(config,callback){
 		if (config.conn) return callback(null,config.conn);
-		if (!config.type) return callback("You must specify a connection type");
+		if (!config.type) return callback("You must specify a connection type -- none specified in configuration:"+JSON.stringify(config,null,4));
 	
 		var constructor=null;
 		switch(config.type){
@@ -333,6 +333,7 @@ var ORM=function(_config){
 			o.filter=getFilters(req,filters);
 			
 			o.username=req.user.username;
+			o.operation="set";
 
 			m.tag(o,function(err, result) {
 				if (err){ console.error(o); next(err);return;}
@@ -565,6 +566,7 @@ var ORM=function(_config){
 						}else{
 							req.params.id=parts[2];
 							if (parts[3]=="tag"){return tag(req,res,next);}
+							if (parts[3]) return res.jsonp(404,{error:"Not found"});
 							return getObject(req,res,next);
 						}
 					};
