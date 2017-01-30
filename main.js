@@ -495,7 +495,7 @@ var ORM=function(_config){
 								return;
 							}
 	
-							res.jsonp(result.data || {success:true});
+							res.jsonp(result.data || {id:result.id,success:true});
 						});
 					}
 				}
