@@ -177,14 +177,21 @@ Frakture.DB.Collection.prototype._save = function(objNew, opts, callback) {
         Frakture.notify.error("Object required");
         return;
     }
-    
+
     var data = {};
     if (this.useGlobal) {data.useGlobal = true;}
     
+    var url=Frakture.DB.path+"/"+this.name;
+    var method="POST";
+    if (objNew.id){
+    	 url+="/"+objNew.id;
+    	 method="PUT"
+    }
+    
     data.data = JSON.stringify(objNew);
     $.ajax({
-        url: Frakture.DB.path+"/"+this.name,
-        type: "POST",
+        url: url,
+        type: method,
         data: data,
         dataType: "json",
         async: opts.async !== true,

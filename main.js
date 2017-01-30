@@ -124,7 +124,7 @@ var ORM=function(_config){
 	if (!_config) throw "No connection configuration specified";
 	var instanceConfig=_config;
 
-	function getConnection(config,callback){
+	function getConnector(config,callback){
 		if (config.conn) return callback(null,config.conn);
 		if (!config.type) return callback("You must specify a connection type -- none specified in configuration:"+JSON.stringify(config,null,4));
 	
@@ -163,9 +163,12 @@ var ORM=function(_config){
 		var id=options.name;
 		if (models[id]) return callback(null,models[id]);
 
-		getConnection(instanceConfig,function(e,conn){
+		getConnector(instanceConfig,function(e,conn){
 			if (e) return callback(e);
 			var name=options.name;
+			
+			
+			conn.auto_increment_start=instanceConfig.auto_increment_start;
 		
 			var modelConfig=instanceConfig.objects[options.name];
 			if (!modelConfig){
@@ -443,7 +446,8 @@ var ORM=function(_config){
 	function upsert(req, res,next){
 		var obj=req.params.object;
 		
-		var id=req.params.id;
+		var id=req.params.id || data.id;
+		
 		
 		var data=JSON.parse(req.body.data || req.query.data);
 		//Legacy support for $set, which is deprecated for an upsert
@@ -479,10 +483,11 @@ var ORM=function(_config){
 								return;
 							}
 	
-							res.jsonp(result.data);
+							res.jsonp(result.data || {id:id,success:true});
 						});
 					}else{
-						console.error(data);console.error("Not id, inserting",data);
+						console.error(data);
+						console.error("No id specified in url, inserting",data);
 						m.insert({data:data},function(err,result){
 							if (err){
 								debug(err);
@@ -491,7 +496,7 @@ var ORM=function(_config){
 								return;
 							}
 	
-							res.jsonp(result.data);
+							res.jsonp(result.data || {success:true});
 						});
 					}
 				}
