@@ -446,12 +446,11 @@ var ORM=function(_config){
 	function upsert(req, res,next){
 		var obj=req.params.object;
 		
-		var id=req.params.id || data.id;
-		
-		
 		var data=JSON.parse(req.body.data || req.query.data);
 		//Legacy support for $set, which is deprecated for an upsert
 		if (data.$set) data=data.$set;
+		
+		var id=req.params.id || data.id;
 		
 		console.error("Upsert data request:",data);
 
