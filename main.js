@@ -533,6 +533,14 @@ var ORM=function(_config){
 		});
 	}
 	
+	this.insert=function(options,callback){
+		options.connection=options.connection || "root";
+		getModel({name:options.object || options.name, connection:options.connection},function(e,m){
+			if (e) return callback(e);
+			m.insert(options,callback);
+		});
+	}
+	
 	this.find=function(options,callback){
 		options.connection=options.connection || "root";
 		getModel({name:options.object || options.name, connection:options.connection},function(e,m){
