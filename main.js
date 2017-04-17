@@ -541,6 +541,14 @@ var ORM=function(_config){
 		});
 	}
 	
+	this.runQuery=function(options,callback){
+		options.connection=options.connection || "root";
+		getConnector(instanceConfig,function(e,connection){
+			if (e) return callback(e);
+			connection.runQuery(options,callback);
+		});
+	}
+	
 	this.find=function(options,callback){
 		options.connection=options.connection || "root";
 		getModel({name:options.object || options.name, connection:options.connection},function(e,m){
