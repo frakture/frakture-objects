@@ -50,7 +50,8 @@ Frakture.DB.restError=function(xhr){
 */
 Frakture.DB.Cursor.prototype._executeFind = function(callback,opts) {
     opts=opts || {};
-    var async = opts.async === true || false;
+    //Not sure why this was defaulting to false, now defaulting to true
+    var async = opts.async !== false;
 
     var data = {};
     
