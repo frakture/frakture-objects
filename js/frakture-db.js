@@ -71,7 +71,7 @@ Frakture.DB.Cursor.prototype.toArray = function(callback,opts){
     opts = opts || {};
 	if (!callback || callback.length<2){throw "Error -- toArray requires a callback with at least 2 (err and data) arguments";}
     this.executeFind(callback,{
-        async: opts.async === true || false
+        async: opts.async !== false
     });
 };
 
@@ -86,7 +86,7 @@ Frakture.DB.Cursor.prototype.forEach = function(callback,opts) {
     };
     
     this.executeFind(_callbackArray,{
-        async: opts.async === true || false
+        async: opts.async !== false
 	});
 };
 
@@ -105,7 +105,7 @@ Frakture.DB.Cursor.prototype.toMap = function(callback,opts) {
     };
     
     this.executeFind(_callbackArray,{
-        async: opts.async === true || false
+        async: opts.async !==false
 	});
 }
 
