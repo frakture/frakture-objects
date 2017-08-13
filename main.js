@@ -98,7 +98,6 @@ Model.prototype.schema=function(options,callback){
 		"type": "object",
 	}
 	
-	console.error("Schemas:",m.schemas);
 	async.eachSeries(m.schemas,function(s,scb){
 		if (typeof s=='object'){
 			schema=utilities.js.extend(true,schema,s);
@@ -262,7 +261,7 @@ var ORM=function(_config){
 			var filters=[q].concat(m.filters);
 			
 			opts.filter=getFilters(req,filters);
-			debug("Filter:",opts.filter);
+			
 			
 			var method=req.params.method || "find";
 
@@ -284,7 +283,6 @@ var ORM=function(_config){
 					  if (r.length==0) r=[{id:""}];
 					  var keys=Object.keys(r[0]);
 					  var data=[keys].concat(r.map(d=>keys.map(k=>d[k])));
-					  console.error(data);
   
 					  res.attachment(new Date().getTime()+'.csv');
 					  csv.stringify(data).pipe(res);
@@ -389,7 +387,7 @@ var ORM=function(_config){
 			
 			opts.filter=getFilters(req,filters);
 			
-			debug("Calling findOne with ",opts);
+			
 			
 			m.findOne(opts,function(err, result) {
 				if (err){ console.error(opts); next(err);return;}
@@ -546,6 +544,14 @@ var ORM=function(_config){
 		getConnector(instanceConfig,function(e,connection){
 			if (e) return callback(e);
 			connection.runQuery(options,callback);
+		});
+	}
+	
+	this.getNowFunction=function(options,callback){
+		options.connection=options.connection || "root";
+		getConnector(instanceConfig,function(e,connection){
+			if (e) return callback(e);
+			return callback(null,connection.getNowFunction());
 		});
 	}
 	
