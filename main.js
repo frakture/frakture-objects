@@ -444,59 +444,57 @@ var ORM=function(_config){
 	function upsert(req, res,next){
 		var obj=req.params.object;
 		
-		var data=JSON.parse(req.body.data || req.query.data);
-		//Legacy support for $set, which is deprecated for an upsert
-		if (data.$set) data=data.$set;
+		var dataArray=JSON.parse(req.body.data || req.query.data);
+		if (!Array.isArray(dataArray)) dataArray=[dataArray];
 		
-		var id=req.params.id || data.id;
-		
-		console.error("Upsert data request:",data);
-
 		getModel({name:req.params.object, connection:req.params.connection},function(e,m){
 			if (e){
 				if (parseInt(e)==e) return res.jsonp(e,m);
 				return res.jsonp(500,e);
 			}
 			console.error("Running before save");
-			_beforeSave(req,m,id,m.name,data, {},function(errs){
+			
+			async.mapSeries(dataArray,function(data,cb){
+				
+				//Legacy support for $set, which is deprecated for an upsert
+				if (data.$set) data=data.$set;
 
-				if (errs){
-					res.jsonp(499,errs);
-					res.setHeader("Error",err.toString());
-					return;
-				}else{
+				var id=data.id || req.params.id;
+			
+				_beforeSave(req,m,id,m.name,data, {},function(errs){
 
-					//ID has already been specified, don't duplicate it
-					delete data[m.primary_key];
-					//Log a warning if there are not update fields, and assume set
-					
-					if (id){
-						console.error("Id exists, updating:",id);
-						m.update({id:id,data:data},function(err,result){
-							if (err){
-								debug(err);
-								res.jsonp(500,err);
-								res.setHeader("Error",err.toString());
-								return;
-							}
-	
-							res.jsonp(result.data || {id:id,success:true});
-						});
+					if (errs){
+						return cb(errs);
 					}else{
-						console.error(data);
-						console.error("No id specified in url, inserting",data);
-						m.insert({data:data},function(err,result){
-							if (err){
-								debug(err);
-								res.jsonp(500,err);
-								res.setHeader("Error",err.toString());
-								return;
-							}
+						//ID has already been specified, don't duplicate it
+						delete data[m.primary_key];
+						//Log a warning if there are not update fields, and assume set
+					
+						if (id){
+							console.error("Id exists, updating:",id);
+							m.update({id:id,data:data},function(err,result){
+								if (err) return cb(err);
 	
-							res.jsonp(result.data || {id:result.id,success:true});
-						});
+								return cb(null,result.data || {id:id,success:true});
+							});
+						}else{
+							console.error(data);
+							console.error("No id specified in url, inserting",data);
+							m.insert({data:data},function(err,result){
+								if (err) return cb(err);
+								return cb(null,result.data || {id:result.id,success:true});
+							});
+						}
 					}
-				}
+				})
+			},function(err,results){
+					if (err){
+						debug(err);
+						res.jsonp(500,err);
+						res.setHeader("Error",err.toString());
+						return;
+					}
+					res.jsonp(results[0]);
 			});
 		});
 	}
